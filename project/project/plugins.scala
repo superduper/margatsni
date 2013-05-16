@@ -12,6 +12,7 @@ object PluginDef extends Build {
     scalaBinaryVersion := "2.9.2",
 
     resolvers ++= Seq(
+      "Maven" at "repo.maven.org",
       "Sonatype Releases"  at "https://oss.sonatype.org/content/repositories/releases/",
       "Sonatype Backup" at "https://oss.sonatype.org/service/local/repositories/releases/content/",
       "Sonatype Snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/",

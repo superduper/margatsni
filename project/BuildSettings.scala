@@ -31,6 +31,5 @@ object BuildSettings {
   lazy val moduleSettings = basicSettings
   lazy val g8Scaffolding = giter8.ScaffoldPlugin.scaffoldSettings
   lazy val revolverSettings = Revolver.settings
-  lazy val packagerSettings = com.typesafe.sbt.SbtNativePackager.packagerSettings
 
 }

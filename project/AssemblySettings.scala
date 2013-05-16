@@ -6,7 +6,7 @@ import spray.revolver.RevolverPlugin.Revolver
 object AssemblySettings {
 
   lazy val margatsniBootstrapServerAssembly = assemblySettings ++ Seq(
-    mainClass in assembly := Some("margatsni.bootstrap.main.Boot"),
+    mainClass in assembly := Some("margatsni.bootstrap.server.main.Boot"),
     jarName in assembly := "margatsni-bootstrap-server.jar",
     test in assembly := {},
     javaOptions in Revolver.reStart += "-Dfile.encoding=UTF8"

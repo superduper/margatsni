@@ -27,8 +27,10 @@ object Dependencies {
   val akkaRemote    = akkaModule("akka-remote")
   val akkaSlf4j     = akkaModule("akka-slf4j")
   
-  val specs2         = "org.specs2"          %%  "specs2"                   % "1.13"
-  val typesafeConfig = "com.typesafe"        %   "config"                   % "1.0.0"
+  val specs2         = "org.specs2"       %%  "specs2"       % "1.13"
+  val typesafeConfig = "com.typesafe"     %   "config"       % "1.0.0"
+  val log4j          = "log4j"            %   "log4j"        % "1.2.17" exclude("javax.jms", "jms")
+  val bouncyCastle   = "org.bouncycastle" %   "bcprov-jdk16" % "1.45"
 
   def listUnmanaged( base : RichFile ) : Keys.Classpath = {
     val baseDirectories = (base / "lib")

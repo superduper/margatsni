@@ -33,10 +33,17 @@ object MargatsniBuild extends Build {
   // -------------------------------------------------------------------------------------------------------------------
 
   lazy val margatsniBootstrapServer = Project("margatsni-bootstrap-server", file("margatsni-bootstrap-server"))
-    .dependsOn(zappPlatformApi, zappSharedApi, zappAdminCore)
+    .settings(unmanagedListing: _*)
     .settings(moduleSettings: _*)
     .settings(revolverSettings: _*)
     .settings(margatsniBootstrapServerAssembly: _*)
+    .settings(libraryDependencies ++=
+      compile(
+        akkaActor, akkaSlf4j, log4j
+      ) ++
+      runtime(bouncyCastle)
+    )
+
 
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -44,8 +51,15 @@ object MargatsniBuild extends Build {
   // -------------------------------------------------------------------------------------------------------------------
 
   lazy val margatsniNode = Project("margatsni-node", file("margatsni-node"))
-    .dependsOn(zappAdminCore)
     .settings(moduleSettings: _*)
-    .settings(revolverSettings: _*)   
-    
+    .settings(revolverSettings: _*)
+    .settings(unmanagedListing: _*)
+    .settings(libraryDependencies ++=
+      compile(
+        akkaActor
+      )
+    )
+
+
+
 }
