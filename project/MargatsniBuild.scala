@@ -47,7 +47,7 @@ object MargatsniBuild extends Build {
 
 
   // -------------------------------------------------------------------------------------------------------------------
-  // Admin Cli
+  // Node
   // -------------------------------------------------------------------------------------------------------------------
 
   lazy val margatsniNode = Project("margatsni-node", file("margatsni-node"))
@@ -56,10 +56,10 @@ object MargatsniBuild extends Build {
     .settings(unmanagedListing: _*)
     .settings(libraryDependencies ++=
       compile(
-        akkaActor
-      )
+        akkaActor, jacksonDatabind,
+        akkaSlf4j, log4j
+      ) ++
+      runtime(sfl4j, bouncyCastle, ritsCloning)
     )
-
-
 
 }

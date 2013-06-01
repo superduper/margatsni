@@ -5,7 +5,7 @@ import BootstrapServerActor.Start
 
 object Boot extends App {
 
-  val system = ActorSystem("MySystem")
+  val system = ActorSystem("bootstrapServer")
   val settings = P2PPManagerSettings(tcpPort = 6666, udpPort = 6666,
                                      overlayID = "fooOverlay", hashAlgorithm = "SHA-1",
                                      hashLength = 20,  hashBase = 2)

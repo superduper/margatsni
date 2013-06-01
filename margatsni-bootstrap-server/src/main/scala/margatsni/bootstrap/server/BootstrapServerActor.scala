@@ -11,16 +11,15 @@ import pl.edu.pjwstk.p2pp.util.P2PPUtils
 
 
 
-class BootstrapServerActor(var manager: P2PPManager) extends Actor {
+class BootstrapServerActor(val manager: P2PPManager) extends Actor {
 
   import BootstrapServerActor._
 
-  private var server: SuperPeerBootstrapServer = _
+  private val server = new SuperPeerBootstrapServer()
 
   def receive = {
 
     case Start =>
-      server = new SuperPeerBootstrapServer()
       manager.addEntity(server)
       manager.start()
 
