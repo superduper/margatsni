@@ -9,23 +9,27 @@ import pl.edu.pjwstk.p2pp.util.P2PPMessageFactory
 import pl.edu.pjwstk.p2pp.util.P2PPUtils
 
 
-
-
-class BootstrapServerActor(val manager: P2PPManager) extends Actor {
-
-  import BootstrapServerActor._
+class BootstrapServerActor(val manager: P2PPManager) extends Actor with akka.actor.ActorLogging {
 
   private val server = new SuperPeerBootstrapServer()
 
   def receive = {
+    case _ =>   // nothing to handle
+  }
 
-    case Start =>
-      manager.addEntity(server)
-      manager.start()
+  override def preStart() {
+    manager.addEntity(server)
+    manager.start()
+    log.info(
+      "Started bootstrap server at tcpPort: %d, udpPort: %d" format (manager.getTcpPort, manager.getUdpPort)
+    )
+  }
 
-    case Stop =>
-      manager.stop()
-
+  override def postStop() {
+    manager.stop()
+    log.info(
+      "Stopped bootstrap server"
+    )
   }
 }
 
@@ -35,14 +39,12 @@ case class P2PPManagerSettings(tcpPort: Int, udpPort: Int, overlayID: String,
 
 object BootstrapServerActor {
 
-  case object Start
-  case object Stop
 
   def apply(settings: P2PPManagerSettings, name:String)
            (implicit system: ActorSystem): ActorRef = {
 
       val p2ppManager: P2PPManager =
-        new P2PPManager(settings.tcpPort, settings.udpPort,  0, 0, 0, "", "",
+        new P2PPManager(settings.tcpPort, settings.udpPort, 0, 0, 0, "", "",
           new P2PPMessageFactory, settings.overlayID.getBytes("UTF-8")
         )
 

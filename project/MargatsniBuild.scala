@@ -54,6 +54,7 @@ object MargatsniBuild extends Build {
     .settings(moduleSettings: _*)
     .settings(revolverSettings: _*)
     .settings(unmanagedListing: _*)
+    .settings(margatsniNodeAssembly: _*)
     .settings(libraryDependencies ++=
       compile(
         akkaActor, jacksonDatabind,

@@ -1,0 +1,6 @@
+How to run jars
+===============
+java -Dconfig.file=<PATH_TO_CONFIG> -jar <PATH_TO_BINARY_JAR>
+
+Example:
+java -Dconfig.file=config/examples/margatsni-bootstrap.conf -jar margatsni-bootstrap-server.jar

@@ -1,0 +1,8 @@
+margatsni.bootstrap-server {
+  listen {
+    tcp-port = 6666
+    udp-port = 6666
+  }
+  overlay-id = "fooOverlay"
+  hash-algorithm = "SHA-1"
+}

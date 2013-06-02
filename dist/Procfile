@@ -1,0 +1,3 @@
+node_alpha: java -Dconfig.file=config/examples/margatsni-node-alpha.conf -jar bin/margatsni-node.jar
+node_bravo: java -Dconfig.file=config/examples/margatsni-node-bravo.conf -jar bin/margatsni-node.jar
+bootstrap: java -Dconfig.file=config/examples/margatsni-bootstrap.conf -jar bin/margatsni-bootstrap-server.jar

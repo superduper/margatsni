@@ -1,17 +1,16 @@
 package margatsni.bootstrap.server
 
 import akka.actor.ActorSystem
-import BootstrapServerActor.Start
 
 object Boot extends App {
+  val settings = BootstrapServerConfig()
 
-  val system = ActorSystem("bootstrapServer")
-  val settings = P2PPManagerSettings(tcpPort = 6666, udpPort = 6666,
-                                     overlayID = "fooOverlay", hashAlgorithm = "SHA-1",
+  // create and start our service actor
+  lazy implicit val system = ActorSystem("bootstrapServer", settings.projectConfig)
+  val p2pSettings = P2PPManagerSettings(tcpPort = settings.tcpPort, udpPort = settings.udpPort,
+                                     overlayID = settings.overlayId, hashAlgorithm = settings.hashAlgorithm,
                                      hashLength = 20,  hashBase = 2)
-  val bootstrapServer = BootstrapServerActor(settings, "bootstrapServer")(system)
-  bootstrapServer ! Start
-
+  BootstrapServerActor(p2pSettings, "bootstrapServer")
 }
 
 

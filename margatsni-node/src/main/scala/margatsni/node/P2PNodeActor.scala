@@ -10,7 +10,6 @@ import scala.collection.mutable.{Map => MutableMap}
 
 
 class P2PNodeActor(node: P2PNode, coreFactory: => JCSyncCore) extends Actor with akka.actor.ActorLogging {
-  import MargatsniServiceActor._
   import CallbackHelpers._
   import P2PNodeActor._
 
