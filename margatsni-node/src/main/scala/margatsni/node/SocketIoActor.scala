@@ -4,26 +4,9 @@ import akka.actor.{Props, Actor}
 import com.corundumstudio.socketio.{SocketIOClient, SocketIOServer, Configuration}
 import scala.concurrent.ExecutionContext
 import akka.util.Timeout
-import margatsni.node.MargatsniServiceActor.{ClientUpdate, Subscribe, NativeCollection}
 
 
-object SocketIoServerHelpers {
-  import SocketIoServerActor._
 
-  def marshalCollection(name: String, data: NativeCollection): UpdatePayload = {
-    val wrapped = new java.util.LinkedHashMap[String, Object]()
-    wrapped.put("collection", name)
-    wrapped.put("data", data)
-    wrapped
-  }
-
-  def unmarshalCollection(payload: UpdatePayload): (String, java.util.ArrayList[Any]) = {
-    val name = payload.get("collection").asInstanceOf[String]
-    val data = payload.get("data").asInstanceOf[java.util.ArrayList[Any]]
-    (name, data)
-  }
-
-}
 
 class SocketIoServerActor(config: Configuration) extends Actor with akka.actor.ActorLogging {
   import SocketIoDSL._
@@ -65,6 +48,7 @@ class SocketIoServerActor(config: Configuration) extends Actor with akka.actor.A
 
   onDisconnect { client =>
     Console.println("Client %s disconnected".format(client.getSessionId.toString))
+    context.parent ! ClientDisconnect(client)
   }
 
   onEvent[SubscribePayload]("subscribe") { (client, payload, request) =>
@@ -83,9 +67,11 @@ class SocketIoServerActor(config: Configuration) extends Actor with akka.actor.A
 
 
 object SocketIoServerActor {
+  import Settings._
 
-  type SubscribePayload = java.util.LinkedHashMap[String, String]
-  type UpdatePayload = java.util.LinkedHashMap[String, Object]
+  case class Subscribe(collectionName: String, client: SocketIOClient)
+  case class ClientUpdate(originator: SocketIOClient, collection: String, data: NativeCollection)
+  case class ClientDisconnect(client: SocketIOClient)
 
   def apply(settings: HostAndPort): Props =
     apply(settings.host, settings.port)

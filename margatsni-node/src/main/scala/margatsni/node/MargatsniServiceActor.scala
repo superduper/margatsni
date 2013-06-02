@@ -1,11 +1,6 @@
 package margatsni.node
 
-import pl.edu.pjwstk.mteam.p2p.P2PNode
-import pl.edu.pjwstk.mteam.jcsync.core.{JCSyncStateListener, JCSyncAbstractSharedObject, JCSyncCore}
 import akka.actor.{Props, Actor}
-import pl.edu.pjwstk.mteam.jcsync.core.implementation.collections.{JCSyncArrayList, SharedCollectionObject, JCSyncHashMap}
-import pl.edu.pjwstk.mteam.jcsync.exception.ObjectExistsException
-import pl.edu.pjwstk.mteam.jcsync.core.consistencyManager.DefaultConsistencyManager
 import scala.collection.mutable.{Map => MutableMap}
 import com.corundumstudio.socketio.SocketIOClient
 import akka.pattern.ask
@@ -13,44 +8,36 @@ import akka.util.Timeout
 import scala.util.{Failure, Success}
 import scala.concurrent.ExecutionContext
 
-case class HostAndPort(host: String, port: Int)
-
-case class NodeSettings(user: String, listen: HostAndPort, bootstrapServer: HostAndPort )
+import Settings._
 
 object MargatsniServiceActor {
-
-  type NativeCollection = java.util.Collection[Any]
-  type JCSyncCollection = JCSyncArrayList[Any]
-
   case object ConnectedToP2PNetwork
-  case class Subscribe(collectionName: String, client: SocketIOClient)
-  case class ClientUpdate(originator: SocketIOClient, collection: String, data: NativeCollection)
-  case class P2PUpdate(collection: String, data: NativeCollection)
-  case class ClientDisconnect(client: SocketIOClient)
-  case class GetP2PCollection(name: String)
-
   def apply(nodeSettings: NodeSettings, socketIoSettings: HostAndPort): Props =
     Props(new MargatsniServiceActor(nodeSettings, socketIoSettings))
 
 }
 
+
 class MargatsniServiceActor(nodeSettings: NodeSettings,
                             socketIoSettings: HostAndPort) extends Actor with akka.actor.ActorLogging {
   import MargatsniServiceActor._
+  import P2PNodeActor._
+  import SocketIoServerActor._
+
   final implicit val timeout = Timeout(1000)
 
   def actorRefFactory = context
   implicit def ec: ExecutionContext = context.dispatcher
 
   private val subscriptions = MutableMap[String, List[SocketIOClient]]()
-                              .withDefaultValue(List[SocketIOClient]())
+    .withDefaultValue(List[SocketIOClient]())
   private var socketIoStarted: Boolean = false
 
 
   def receive = {
     case ConnectedToP2PNetwork =>
       startSocketIoServer()
-      
+
     case Subscribe(collectionName, client) =>
       subscribeCollection(collectionName, client)
 
@@ -100,7 +87,7 @@ class MargatsniServiceActor(nodeSettings: NodeSettings,
   private def sendCollection(name: String, client: SocketIOClient) {
     (
       (context.actorFor("p2p") ? GetP2PCollection(name)).mapTo[JCSyncCollection]
-    ) onComplete {
+      ) onComplete {
       case Success(data) =>
         sendCollectionUpdate(client, name, data)
       case Failure(cause: Throwable) =>
@@ -115,7 +102,7 @@ class MargatsniServiceActor(nodeSettings: NodeSettings,
       log.debug("Updated list of subscribers :%s" format subscriptions(name))
     }
   }
-  
+
   private def unSubscribeAllCollections(client: SocketIOClient) {
     subscriptions.keys map {
       unSubscribeCollection(_, client)
@@ -153,101 +140,3 @@ class MargatsniServiceActor(nodeSettings: NodeSettings,
     context.actorFor("socketIo") ! ClientUpdate(client, collectionName, data)
   }
 }
-
-
-class P2PNodeActor(node: P2PNode) extends Actor with akka.actor.ActorLogging {
-  import MargatsniServiceActor._
-  import CallbackHelpers._
-
-  private val collections = MutableMap[String, JCSyncCollection]()
-
-  def receive = {
-
-    case P2PUpdate(collectionName, data) =>
-      log.debug("Updating collection <%s> with <%s>".format(collectionName, data))
-      updateCollection(collectionName, data)
-      log.debug("Updated collection <%s> with <%s>".format(collectionName, data))
-
-    case GetP2PCollection(collectionName) =>
-      sender ! getOrCreateCollection(collectionName)
-  }
-
-  override def preStart() {
-    Console.println("Started NodeActor")
-    node.networkJoin()
-    Console.println("Connecting to p2p network")
-    node.addCallback(onJoinCallback { node =>
-      Console.println("Connected to the p2p network!")
-      context.parent ! MargatsniServiceActor.ConnectedToP2PNetwork
-    })
-  }
-
-  private def updateCollection(name: String, data: java.util.Collection[Any]) = {
-    val coll = getOrCreateCollection(name)
-    coll.clear()
-    coll.addAll(data)
-  }
-
-  private def getOrCreateCollection(name: String): JCSyncCollection  = {
-    if (collections contains name) {
-      collections(name)
-    } else {
-      val (coll_so, coll) = getOrCreateCollection0(name)
-      subscribeCollectionUpdates(name, coll_so)
-      collections.put(name, coll)
-      coll
-    }
-  }
-
-  private def getOrCreateCollection0(name: String): (SharedCollectionObject, JCSyncCollection) = {
-    val core = new JCSyncCore(node, 31337)
-    var coll = new JCSyncCollection
-    var coll_so: SharedCollectionObject = null
-
-    core.init()
-    try {
-      log.debug(s"Collection <$name> is created")
-      coll_so = new SharedCollectionObject(name, coll, core, classOf[DefaultConsistencyManager])
-    } catch {
-      case e: ObjectExistsException =>
-        log.debug(s"Got existing collection  <$name> ")
-        coll_so = JCSyncAbstractSharedObject.getFromOverlay(name, core).asInstanceOf[SharedCollectionObject]
-        coll = coll_so.getNucleusObject.asInstanceOf[JCSyncCollection]
-      case e: Exception =>
-        log.error(e, "Error on getOrCreateCollection0")
-    }
-    (coll_so, coll)
-  }
-
-  private def subscribeCollectionUpdates(name: String, coll_so: SharedCollectionObject) {
-    coll_so.addStateListener(new JCSyncStateListener {
-      def onRemoteStateUpdated(collection: JCSyncAbstractSharedObject, method: String, result: Any) {
-        Console.println(s"remote state updated, coll:<$collection> method:<$method> result<$result>")
-        context.parent ! P2PUpdate(name, result.asInstanceOf[JCSyncCollection])
-      }
-
-      def onLocalStateUpdated(collection: JCSyncAbstractSharedObject, method: String, result: Any) {
-        Console.println(s"local state updated, coll:<$collection> method:<$method> result<$result>")
-        // bypass
-      }
-    })
-  }
-
-}
-
-
-object P2PNodeActor {
-
-  def apply(settings: NodeSettings): Props = {
-    val node =  new P2PNode(null, P2PNode.RoutingAlgorithm.SUPERPEER)
-    node.setBootIP(settings.bootstrapServer.host)
-    node.setBootPort(settings.bootstrapServer.port)
-    node.setUserName(settings.user)
-    node.setTcpPort(settings.listen.port)
-    apply(node)
-  }
-
-  def apply(node: P2PNode) =
-    Props(new P2PNodeActor(node))
-}
-
